@@ -61,7 +61,7 @@ int main(int argc, char **argv)
             line = el_gets(el, &len);
             if (line == NULL) break;
 
-            write(conn->sockfd, line, len + 1);
+            conn_write(conn, line, len + 1);
         }
         el_end(el);
 
@@ -81,7 +81,7 @@ int main(int argc, char **argv)
 
         char buffer[BUFSIZE];
         ssize_t len = 0;
-        while ((len = read(conn->sockfd, buffer, BUFSIZE - 1)) > 0)
+        while ((len = conn_read(conn, buffer, BUFSIZE - 1)) > 0)
         {
             buffer[len] = 0;
             printf("%s", buffer);

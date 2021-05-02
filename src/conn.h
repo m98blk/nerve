@@ -55,5 +55,15 @@ bool conn_in_listen(struct conn_ctx *ctx);
 void conn_in_disconnect(struct conn_ctx *ctx);
 
 
+/*
+ * General connection operations
+ */
+
+// Write n bytes of data
+void conn_write(struct conn_ctx *ctx, const char *data, int n);
+// Read up to n bytes into buffer, return number of bytes read
+int conn_read(struct conn_ctx *ctx, char *buffer, int n);
+
+
 #endif
 

@@ -118,3 +118,13 @@ void conn_in_disconnect(struct conn_ctx *ctx)
     }
 }
 
+void conn_write(struct conn_ctx *ctx, const char *data, int n)
+{
+    write(ctx->sockfd, data, n);
+}
+
+int conn_read(struct conn_ctx *ctx, char *buffer, int n)
+{
+    return read(ctx->sockfd, buffer, n);
+}
+
