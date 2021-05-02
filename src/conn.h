@@ -17,9 +17,9 @@
 /* Connection context structure */
 struct conn_ctx
 {
-	int sockfd;
-	int sockdomain;
-	struct sockaddr_in sockaddr;
+    int sockfd;
+    int sockdomain;
+    struct sockaddr_in sockaddr;
 };
 
 /* Create a connection context structure */
@@ -41,3 +41,4 @@ void conn_disconnect(struct conn_ctx *ctx);
 
 
 #endif
+
