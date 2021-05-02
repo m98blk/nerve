@@ -14,7 +14,7 @@
  * Connection context
  */
 
-/* Connection context structure */
+// Connection context structure
 struct conn_ctx
 {
     int sockfd;
@@ -25,9 +25,9 @@ struct conn_ctx
     struct sockaddr_in local_addr;
 };
 
-/* Create a connection context structure */
+// Create a connection context structure
 struct conn_ctx *conn_ctx_create(void);
-/* Destroy a connection context structure */
+// Destroy a connection context structure
 void conn_ctx_destroy(struct conn_ctx *ctx);
 
 
@@ -35,11 +35,11 @@ void conn_ctx_destroy(struct conn_ctx *ctx);
  * Outbound connection operations
  */
 
-/* Initialize connection data for an outgoing IPv4 connection */
+// Initialize connection data for an outgoing IPv4 connection
 void conn_out_init_ipv4(struct conn_ctx *ctx, const char *ipv4, int port);
-/* Attempt to connect to the target, return success status */
+// Attempt to connect to the target, return success status
 bool conn_out_connect(struct conn_ctx *ctx);
-/* Disconnect from the target */
+// Disconnect from the target
 void conn_out_disconnect(struct conn_ctx *ctx);
 
 
@@ -47,11 +47,11 @@ void conn_out_disconnect(struct conn_ctx *ctx);
  * Incoming connection operations
  */
 
-/* Initialize connection data for an incoming IPv4 connection */
+// Initialize connection data for an incoming IPv4 connection
 bool conn_in_init_ipv4(struct conn_ctx *ctx, int port);
-/* Listen for an incoming connection (blocking call), return success status */
+// Listen for an incoming connection (blocking), return success status
 bool conn_in_listen(struct conn_ctx *ctx);
-/* End the connection */
+// End the connection
 void conn_in_disconnect(struct conn_ctx *ctx);
 
 

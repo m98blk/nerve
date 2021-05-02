@@ -3,6 +3,7 @@
  */
 
 #include "conn.h"
+#include <histedit.h>
 #include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -12,8 +13,8 @@
 #define BUFSIZE 256
 
 
-/* Parse port number from arg */
-int port_arg_to_portnum(const char *port_arg)
+// Parse port number from arg
+int port_str_to_int(const char *port_arg)
 {
     char *endptr;
     int portnum = strtol(port_arg, &endptr, 10);
@@ -25,14 +26,13 @@ int port_arg_to_portnum(const char *port_arg)
     return portnum;
 }
 
-/* Print a usage string */
+// Print a usage string
 void usage(void)
 {
     puts("usage: nerve [target_address] port\n"
          "        If target_address isn't specified, nerve will listen on the given port");
 }
 
-/* Program entry */
 int main(int argc, char **argv)
 {
 	bool is_outbound_mode = argc == 3;
@@ -43,26 +43,32 @@ int main(int argc, char **argv)
     }
 
     struct conn_ctx *conn = conn_ctx_create();
+    int portnum = port_str_to_int(is_outbound_mode ? argv[2] : argv[1]);
     
 	if (is_outbound_mode)
 	{
-        int portnum = port_arg_to_portnum(argv[2]);
 		conn_out_init_ipv4(conn, argv[1], portnum);
         if (!conn_out_connect(conn))
         {
             exit(EXIT_FAILURE);
         }
 
-        const char msg[] = "Hello world!\n";
-        char buffer[BUFSIZE];
-        strcpy(buffer, msg);
-        write(conn->sockfd, buffer, sizeof(msg));
+        const char *line;
+        EditLine *el = el_init("nerve", stdin, stdout, stderr);
+        int len;
+        while (true)
+        {
+            line = el_gets(el, &len);
+            if (line == NULL) break;
+
+            write(conn->sockfd, line, len + 1);
+        }
+        el_end(el);
 
         conn_out_disconnect(conn);
 	}
     else
     {
-        int portnum = port_arg_to_portnum(argv[1]);
         if (!conn_in_init_ipv4(conn, portnum))
         {
             exit(EXIT_FAILURE);
