@@ -6,7 +6,11 @@
 #include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
+
+#define BUFSIZE 256
+
 
 /* Parse port number from arg */
 int port_arg_to_portnum(const char *port_arg)
@@ -31,29 +35,54 @@ void usage(void)
 /* Program entry */
 int main(int argc, char **argv)
 {
-	bool is_client_mode = argc == 3;
-    if (!is_client_mode && argc != 2)
+	bool is_outbound_mode = argc == 3;
+    if (!is_outbound_mode && argc != 2)
     {
         usage();
         exit(EXIT_SUCCESS);
     }
 
     struct conn_ctx *conn = conn_ctx_create();
-
-	if (is_client_mode)
+    
+	if (is_outbound_mode)
 	{
         int portnum = port_arg_to_portnum(argv[2]);
-		conn_initialize_ipv4(conn, argv[1], portnum);
-        if (!conn_connect(conn))
+		conn_out_init_ipv4(conn, argv[1], portnum);
+        if (!conn_out_connect(conn))
         {
             exit(EXIT_FAILURE);
         }
 
-        char buffer[128] = "Test message!\n";
-        write(conn->sockfd, buffer, 14);
+        const char msg[] = "Hello world!\n";
+        char buffer[BUFSIZE];
+        strcpy(buffer, msg);
+        write(conn->sockfd, buffer, sizeof(msg));
 
-        conn_disconnect(conn);
+        conn_out_disconnect(conn);
 	}
+    else
+    {
+        int portnum = port_arg_to_portnum(argv[1]);
+        if (!conn_in_init_ipv4(conn, portnum))
+        {
+            exit(EXIT_FAILURE);
+        }
+        
+        if (!conn_in_listen(conn))
+        {
+            exit(EXIT_FAILURE);
+        }
+
+        char buffer[BUFSIZE];
+        ssize_t len = 0;
+        while ((len = read(conn->sockfd, buffer, BUFSIZE - 1)) > 0)
+        {
+            buffer[len] = 0;
+            printf("%s", buffer);
+        }
+
+        conn_in_disconnect(conn);
+    }
 
     conn_ctx_destroy(conn);
 
