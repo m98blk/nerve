@@ -3,6 +3,7 @@
  */
 
 #include "conn.h"
+#include "receive.h"
 #include <histedit.h>
 #include <limits.h>
 #include <stdio.h>
@@ -26,6 +27,12 @@ int port_str_to_int(const char *port_arg)
     return portnum;
 }
 
+const char *readline_prompt(EditLine *el)
+{
+    (void)el;
+    return "> ";
+}
+
 // Print a usage string
 void usage(void)
 {
@@ -39,12 +46,11 @@ int main(int argc, char **argv)
     if (!is_outbound_mode && argc != 2)
     {
         usage();
-        exit(EXIT_SUCCESS);
+        exit(EXIT_FAILURE);
     }
+    int portnum = port_str_to_int(is_outbound_mode ? argv[2] : argv[1]);
 
     struct conn_ctx *conn = conn_ctx_create();
-    int portnum = port_str_to_int(is_outbound_mode ? argv[2] : argv[1]);
-    
 	if (is_outbound_mode)
 	{
 		conn_out_init_ipv4(conn, argv[1], portnum);
@@ -52,20 +58,6 @@ int main(int argc, char **argv)
         {
             exit(EXIT_FAILURE);
         }
-
-        const char *line;
-        EditLine *el = el_init("nerve", stdin, stdout, stderr);
-        int len;
-        while (true)
-        {
-            line = el_gets(el, &len);
-            if (line == NULL) break;
-
-            conn_write(conn, line, len + 1);
-        }
-        el_end(el);
-
-        conn_out_disconnect(conn);
 	}
     else
     {
@@ -78,18 +70,37 @@ int main(int argc, char **argv)
         {
             exit(EXIT_FAILURE);
         }
+    }
+    
+    reader_start(conn);
+    EditLine *el = el_init("nerve", stdin, stdout, stderr);
+    el_set(el, EL_PROMPT, readline_prompt);
+    const char *line;
+    int len;
+    
+    while (true)
+    {
+        line = el_gets(el, &len);
+        if (line == NULL) break;
 
-        char buffer[BUFSIZE];
-        ssize_t len = 0;
-        while ((len = conn_read(conn, buffer, BUFSIZE - 1)) > 0)
+        int bytes = conn_write(conn, line, len + 1);
+        if (bytes < 0)
         {
-            buffer[len] = 0;
-            printf("%s", buffer);
+            perror("write");
+            break;
         }
-
+    }
+    
+    el_end(el);
+    reader_stop();
+    if (is_outbound_mode)
+    {
+        conn_out_disconnect(conn);
+    }
+    else
+    {
         conn_in_disconnect(conn);
     }
-
     conn_ctx_destroy(conn);
 
     return EXIT_SUCCESS;

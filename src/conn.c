@@ -16,6 +16,7 @@ struct conn_ctx *conn_ctx_create(void)
     struct conn_ctx *ctx = malloc(sizeof(struct conn_ctx));
     ctx->sockfd = -1;
     ctx->sockfd_listen = -1;
+    pthread_mutex_init(&ctx->sockmtx, NULL);
     memset(&ctx->target_addr, 0, sizeof(struct sockaddr_in));
     memset(&ctx->local_addr, 0, sizeof(struct sockaddr_in));
     return ctx;
@@ -23,11 +24,11 @@ struct conn_ctx *conn_ctx_create(void)
 
 void conn_ctx_destroy(struct conn_ctx *ctx)
 {
+    pthread_mutex_destroy(&ctx->sockmtx);
     if (ctx->sockfd != -1)
     {
         close(ctx->sockfd);
     }
-    
     free(ctx);
 }
 
@@ -99,7 +100,8 @@ bool conn_in_listen(struct conn_ctx *ctx)
         return false;
     }
 
-    ctx->sockfd = accept(ctx->sockfd_listen, NULL, NULL);
+    socklen_t addrlen = sizeof(ctx->target_addr);
+    ctx->sockfd = accept(ctx->sockfd_listen, (struct sockaddr *)&ctx->target_addr, &addrlen);
     if (ctx->sockfd < 0)
     {
         perror("accept");
@@ -118,13 +120,19 @@ void conn_in_disconnect(struct conn_ctx *ctx)
     }
 }
 
-void conn_write(struct conn_ctx *ctx, const char *data, int n)
+int conn_write(struct conn_ctx *ctx, const char *data, int n)
 {
-    write(ctx->sockfd, data, n);
+    pthread_mutex_lock(&ctx->sockmtx);
+    int bytes = write(ctx->sockfd, data, n);
+    pthread_mutex_unlock(&ctx->sockmtx);
+    return bytes;
 }
 
 int conn_read(struct conn_ctx *ctx, char *buffer, int n)
 {
-    return read(ctx->sockfd, buffer, n);
+    pthread_mutex_lock(&ctx->sockmtx);    
+    int bytes = read(ctx->sockfd, buffer, n);
+    pthread_mutex_unlock(&ctx->sockmtx);
+    return bytes;
 }
 

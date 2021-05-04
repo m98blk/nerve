@@ -6,10 +6,11 @@
 #define CONN_H
 
 #include <netinet/in.h>
+#include <pthread.h>
 #include <sys/socket.h>
 #include <stdbool.h>
-	
-	
+
+
 /*
  * Connection context
  */
@@ -20,6 +21,7 @@ struct conn_ctx
     int sockfd;
     int sockfd_listen;
     int sockdomain;
+    pthread_mutex_t sockmtx;
     bool is_outbound;
     struct sockaddr_in target_addr;
     struct sockaddr_in local_addr;
@@ -60,7 +62,7 @@ void conn_in_disconnect(struct conn_ctx *ctx);
  */
 
 // Write n bytes of data
-void conn_write(struct conn_ctx *ctx, const char *data, int n);
+int conn_write(struct conn_ctx *ctx, const char *data, int n);
 // Read up to n bytes into buffer, return number of bytes read
 int conn_read(struct conn_ctx *ctx, char *buffer, int n);
 
